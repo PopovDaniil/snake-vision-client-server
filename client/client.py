@@ -7,10 +7,10 @@ from threading import Thread
 import cv2
 import numpy as np
 import zmq
-from ordered_set import OrderedSet
 
 import HandTracking as htm
 from gestures import gestures as all_gestures
+from sequences import sequences as all_sequences, GestureSequence
 
 EXIT = 'EXIT'
 
@@ -27,7 +27,7 @@ def image_detection_thread(queue: Queue):
     tipIds = [4, 8, 12, 16, 20]
 
     found_gestures = dict()
-    filtered_gestures = OrderedSet()
+    filtered_gestures = GestureSequence()
 
     print('Image detection started')
 
@@ -61,10 +61,10 @@ def image_detection_thread(queue: Queue):
             filtered_gestures.add(gesture_name)
             print(filtered_gestures)
 
-    def find_sequence(gestures: list):
-        if gestures == {'like', 'fist', 'hello'}:
-            ctypes.windll.user32.MessageBoxW(0, "Лампочка гори!", "Действие", 1)
-        return
+    def find_sequence(gestures: GestureSequence, all_sequences: dict):
+        action = all_sequences.get(gestures)
+        if action:
+            ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
         
     while True:
         start_tick = time.perf_counter()
@@ -80,10 +80,7 @@ def image_detection_thread(queue: Queue):
 
         if gesture_name:
             filter_gesture(gesture_name, found_gestures, filtered_gestures)
-            find_sequence(filtered_gestures)
-
-        if cv2.waitKey(1) == 27:
-            queue.put(EXIT)
+            find_sequence(filtered_gestures, all_sequences)
 
         current_time = time.perf_counter()
         all_time = np.round(current_time - start_time, decimals=2)
