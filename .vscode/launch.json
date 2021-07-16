@@ -8,7 +8,7 @@
             "name": "Клиент",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}/client/client.py",
+            "program": "${cwd}/client/main.py",
             "console": "integratedTerminal"
         },
         {

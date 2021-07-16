@@ -1,36 +1,15 @@
-import base64
-import ctypes
-import time
 from queue import Queue
-from threading import Thread
 
-import cv2
-import numpy as np
 import zmq
-
+import cv2
+import time
+import base64
+import numpy as np
 import HandTracking as htm
 from gestures import gestures as all_gestures
 from sequences import sequences as all_sequences, GestureSequence
 
-EXIT = 'EXIT'
-
 def image_detection_thread(queue: Queue):
-    context = zmq.Context()
-    image_socket = context.socket(zmq.SUB)
-    image_socket.bind('tcp://*:7777')
-    image_socket.setsockopt(zmq.SUBSCRIBE, b'')
-
-    start_time = time.perf_counter()
-
-    detector = htm.handDetector(detectionCon=0.85)
-
-    tipIds = [4, 8, 12, 16, 20]
-
-    found_gestures = dict()
-    filtered_gestures = GestureSequence()
-
-    print('Image detection started')
-
     def find_fingers(lmList: list):
         fingers = []
         if len(lmList) != 0:
@@ -64,7 +43,24 @@ def image_detection_thread(queue: Queue):
     def find_sequence(gestures: GestureSequence, all_sequences: dict):
         action = all_sequences.get(gestures)
         if action:
-            ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
+            # ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
+            pass
+
+    context = zmq.Context()
+    image_socket = context.socket(zmq.SUB)
+    image_socket.bind('tcp://*:7777')
+    image_socket.setsockopt(zmq.SUBSCRIBE, b'')
+
+    start_time = time.perf_counter()
+
+    detector = htm.handDetector(detectionCon=0.85)
+
+    tipIds = [4, 8, 12, 16, 20]
+
+    found_gestures = dict()
+    filtered_gestures = GestureSequence()
+
+    print('Image detection started')
         
     while True:
         start_tick = time.perf_counter()
@@ -91,31 +87,3 @@ def image_detection_thread(queue: Queue):
         cv2.imshow("Image", img)
         cv2.waitKey(1)
         # pTime = cTime
-
-def device_messaging_thread(queue: Queue):
-    context = zmq.Context()
-    message_socket = context.socket(zmq.PUB)
-    message_socket.connect('tcp://localhost:8888')
-    print('Device messaging started')
-
-    while True:
-        if (queue.get() == EXIT):
-            message_socket.send_string(EXIT)
-            print('EXIT sent')
-
-def main():
-    try:
-        q = Queue()
-        print('Client started')
-        image_thr = Thread(target=image_detection_thread, name='Image detection', args=(q,), daemon=True)
-        message_thr = Thread(target=device_messaging_thread, name='Device messaging', args=(q,), daemon=True)
-        image_thr.start()
-        message_thr.start()
-        while True:
-            if q.get() == EXIT:
-                exit()
-    except KeyboardInterrupt:
-        exit()
-
-if __name__ == '__main__':
-    main()

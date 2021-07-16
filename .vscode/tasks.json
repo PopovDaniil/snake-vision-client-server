@@ -6,7 +6,7 @@
         {
             "label": "Start client",
             "type": "shell",
-            "command": "python ${cwd}/client/client.py",
+            "command": "python ${cwd}/client/main.py",
             "problemMatcher": []
         },
         {
