@@ -4,6 +4,7 @@ import zmq
 import cv2
 import time
 import base64
+import ctypes
 import numpy as np
 import HandTracking as htm
 from gestures import gestures as all_gestures
@@ -33,18 +34,21 @@ def image_detection_thread(queue: Queue):
             if all_gestures[name](fingers):
                 return name
 
-    def filter_gesture(gesture_name: str, found_gestures: dict[str,int], filtered_gestures: list[str]):
+    def filter_gesture(gesture_name: str, found_gestures: dict[str,int], filtered_gestures: GestureSequence):
         found_gestures.setdefault(gesture_name, 0)
         found_gestures[gesture_name] += 1
         if found_gestures[gesture_name] >= 50:
             filtered_gestures.add(gesture_name)
+            if gesture_name == 'clear':
+                filtered_gestures.clear()
             print(filtered_gestures)
 
     def find_sequence(gestures: GestureSequence, all_sequences: dict):
         action = all_sequences.get(gestures)
         if action:
-            # ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
-            pass
+            ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
+            return True
+        return False
 
     context = zmq.Context()
     image_socket = context.socket(zmq.SUB)
@@ -76,7 +80,8 @@ def image_detection_thread(queue: Queue):
 
         if gesture_name:
             filter_gesture(gesture_name, found_gestures, filtered_gestures)
-            find_sequence(filtered_gestures, all_sequences)
+            if find_sequence(filtered_gestures, all_sequences):
+                filtered_gestures.clear()
 
         current_time = time.perf_counter()
         all_time = np.round(current_time - start_time, decimals=2)

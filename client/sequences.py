@@ -9,10 +9,18 @@ class GestureSequence(OrderedSet):
             h += hash(k)
         return h
     def __str__(self) -> str:
+        if (len(self) == 0):
+            return 'Empty'
         s = ''
         for g in self:
             s += str(g) + '->'
         return s
+    def __eq__(self, other) -> bool:
+        for i in range(len(self)):
+            if self[i] != other[i]:
+                return False
+        return True
+
 
 sequences: dict = {
     GestureSequence({'like', 'fist', 'hello'}): lambda: 'Лампочка гори'
