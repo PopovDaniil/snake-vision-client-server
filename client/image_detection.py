@@ -1,4 +1,7 @@
+from ordered_set import OrderedSet
+from sequences import GestureCollection
 from queue import Queue
+from threading import Thread
 
 import zmq
 import cv2
@@ -9,8 +12,9 @@ import numpy as np
 import HandTracking as htm
 from gestures import gestures as all_gestures
 from sequences import sequences as all_sequences, GestureSequence
+from device_messaging import device_messaging_thread
 
-def image_detection_thread(queue: Queue):
+def image_detection_thread():
     def find_fingers(lmList: list):
         fingers = []
         if len(lmList) != 0:
@@ -43,10 +47,12 @@ def image_detection_thread(queue: Queue):
                 filtered_gestures.clear()
             print(filtered_gestures)
 
-    def find_sequence(gestures: GestureSequence, all_sequences: dict):
-        action = all_sequences.get(gestures)
+    def find_sequence(gestures: OrderedSet, all_sequences: GestureCollection):
+        action = all_sequences.getAction(gestures)
         if action:
-            ctypes.windll.user32.MessageBoxW(0, action(), "Действие", 1)
+            messaging = Thread(target=device_messaging_thread, name='Device messaging', args=(action, ))
+            messaging.start()
+            messaging.join()
             return True
         return False
 
@@ -62,7 +68,7 @@ def image_detection_thread(queue: Queue):
     tipIds = [4, 8, 12, 16, 20]
 
     found_gestures = dict()
-    filtered_gestures = GestureSequence()
+    filtered_gestures = OrderedSet()
 
     print('Image detection started')
         
